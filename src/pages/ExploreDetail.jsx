@@ -35,6 +35,21 @@ export default function ExploreDetail() {
                 </div>
             </div>
 
+            <div className="h-152 w-262 mx-auto px-6 mb-12">
+                <h2 className="text-2xl font-bold mb-4 text-amber-400 text-center">
+                    Virtual Tour (Demo)
+                </h2>
+                <div className="w-full aspect-[16/9] rounded-xl overflow-hidden shadow-lg border border-gray-700">
+                    <iframe
+                        title="360° Panorama"
+                        src={`/panellum.html?img=${data.image}`}
+                        className="w-full h-full"
+                        style={{ border: "none" }}
+                        allowFullScreen
+                    />
+                </div>
+            </div>
+
             {/* Content */}
             <div className="max-w-3xl mx-auto px-8 py-6">
                 <h2 className="text-2xl font-bold mb-4 text-amber-400">Description</h2>
