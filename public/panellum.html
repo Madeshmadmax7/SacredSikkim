@@ -1,45 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <title>Monastery360 Panorama</title>
-    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
-    <style>
-    body, html {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        background: black;
-    }
-    #panorama {
-        width: 100%;
-        height: 100%;
-        max-height: 100%;
-        aspect-ratio: 16 / 9;
-    }
-</style>
-
+    <meta charset="utf-8" />
+    <title>Monastery360 Panorama</title>
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
+    <link rel="stylesheet" href="/src/index.css" />
 </head>
-<body>
-    <div id="panorama"></div>
-    <script>
-        // Disable right-click
-        document.addEventListener('contextmenu', event => event.preventDefault());
+<body class="m-0 p-0 w-full h-screen bg-black relative">
+    <div id="panorama" class="w-full h-full aspect-[16/9]"></div>
+    <div id="narrationBox" class="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-5 py-3 rounded-lg text-base max-w-[70%] text-center hidden z-10"></div>
+    <div id="arrowControls" class="absolute top-1/2 left-0 right-0 w-full flex justify-between pointer-events-none z-10">
+        <button id="leftBtn" aria-label="Go Left" 
+            class="pointer-events-auto bg-black/70 text-white w-12 h-12 rounded-full text-2xl flex items-center justify-center border-none hover:bg-amber-400 hover:text-black transition cursor-pointer">&#x25C0;</button>
+        <button id="rightBtn" aria-label="Go Right" 
+            class="pointer-events-auto bg-black/70 text-white w-12 h-12 rounded-full text-2xl flex items-center justify-center border-none hover:bg-amber-400 hover:text-black transition cursor-pointer">&#x25B6;</button>
+    </div>
 
-        // Get image from query string (?img=...)
-        const params = new URLSearchParams(window.location.search);
-        const img = params.get("img") || "fallback.jpg";
 
-        pannellum.viewer("panorama", {
-            type: "equirectangular",
-            panorama: img,
-            autoLoad: true,
-            showControls: true,
-            showFullscreenCtrl: true,
-            showZoomCtrl: true
-        });
-    </script>
+    <script>
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        const params = new URLSearchParams(window.location.search);
+        const img = params.get("img") || "fallback.jpg";
+        const lang = params.get("lang") || "en";
+        const hotspots = JSON.parse(params.get("hotspots") || "[]");
+
+
+        const cardinals = [
+            { id: "front", yaw: 0 },
+            { id: "right", yaw: 90 },
+            { id: "back", yaw: 180 },
+            { id: "left", yaw: 270 }
+        ];
+
+
+        const hotSpotConfig = cardinals.map(c => ({
+            pitch: 0,
+            yaw: c.yaw,
+            type: "info",
+            text: c.id.charAt(0).toUpperCase() + c.id.slice(1),
+            id: c.id,
+            clickHandlerFunc: () => playNarration(c.id)
+        }));
+
+
+        function playNarration(side) {
+            const hs = hotspots.find(h => h.id === side);
+            const text = hs ? hs.text : "";
+            if (!text) return;
+            const narrationBox = document.getElementById("narrationBox");
+            narrationBox.innerText = text;
+            narrationBox.style.display = "block";
+            if ('speechSynthesis' in window) {
+                speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang === "hi" ? "hi-IN" : "en-US";
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.onend = () => { narrationBox.style.display = "none"; };
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+
+        const viewer = pannellum.viewer("panorama", {
+            type: "equirectangular",
+            panorama: img,
+            autoLoad: true,
+            showControls: true,
+            showFullscreenCtrl: true,
+            showZoomCtrl: true,
+            hotSpots: hotSpotConfig
+        });
+
+
+        function getCurrentCardinalIndex() {
+            let yaw = ((viewer.getYaw() % 360) + 360) % 360;
+            if ((yaw >= 315 && yaw <= 360) || (yaw >= 0 && yaw < 45)) return 0; // front
+            if (yaw >= 45 && yaw < 135) return 1;  // right
+            if (yaw >= 135 && yaw < 225) return 2; // back
+            if (yaw >= 225 && yaw < 315) return 3; // left
+            return 0;
+        }
+
+
+        document.getElementById("leftBtn").onclick = function() {
+            let idx = getCurrentCardinalIndex();
+            let newIdx = (idx + 3) % 4;
+            viewer.lookAt(0, cardinals[newIdx].yaw, 1000);
+            setTimeout(() => playNarration(cardinals[newIdx].id), 1100);
+        };
+
+
+        document.getElementById("rightBtn").onclick = function() {
+            let idx = getCurrentCardinalIndex();
+            let newIdx = (idx + 1) % 4;
+            viewer.lookAt(0, cardinals[newIdx].yaw, 1000);
+            setTimeout(() => playNarration(cardinals[newIdx].id), 1100);
+        };
+    </script>
 </body>
 </html>
+

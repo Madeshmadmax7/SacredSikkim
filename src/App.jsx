@@ -21,6 +21,7 @@ function App() {
         <Route path="/images" element={<Images />} />
         <Route path="/about" element={<About />} />
       </Routes>
+      {/* <Naration/> */}
       <Footer/>
     </BrowserRouter>
   );
