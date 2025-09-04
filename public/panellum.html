@@ -5,13 +5,14 @@
     <meta charset="UTF-8" />
     <title>Monastery360 Panorama</title>
 
+    <!-- Pannellum CSS and JS -->
     <link href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Ensure panorama container fills and no overflow */
         html,
         body {
             height: 100%;
@@ -23,6 +24,15 @@
             width: 100%;
             height: 100vh;
         }
+
+        /* Force-hide pannellum default UI */
+        .pnlm-about,
+        .pnlm-about-msg,
+        .pnlm-controls,
+        .pnlm-zoom-controls,
+        .pnlm-fullscreen-toggle {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -30,39 +40,40 @@
 
     <div id="panorama" class="w-full h-screen"></div>
 
-    <!-- Narration text box -->
+    <!-- Narration box -->
     <div id="narrationBox"
         class="hidden absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-5 py-3 rounded-lg max-w-[70%] text-center z-50">
     </div>
 
-    <!-- Navigation arrows -->
-    <div class="absolute top-1/2 left-4 right-4 flex justify-between z-50">
-        <button id="btn-left" aria-label="Rotate Left"
-            class="bg-black/70 hover:bg-amber-400 text-white rounded-full p-2 shadow-lg">
-            <!-- Left arrow unicode -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-        </button>
-        <button id="btn-right" aria-label="Rotate Right"
-            class="bg-black/70 hover:bg-amber-400 text-white rounded-full p-2 shadow-lg">
-            <!-- Right arrow unicode -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-        </button>
-    </div>
+    <!-- Navigation buttons -->
+    <button id="btn-left" aria-label="Rotate Left"
+        class="absolute top-1/2 left-4 -translate-y-1/2 bg-black/70 hover:bg-amber-400 text-white rounded-full p-3 shadow-lg cursor-pointer z-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+    </button>
+
+    <button id="btn-right" aria-label="Rotate Right"
+        class="absolute top-1/2 right-4 -translate-y-1/2 bg-black/70 hover:bg-amber-400 text-white rounded-full p-3 shadow-lg cursor-pointer z-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+    </button>
 
     <script>
-        // Prevent right click context menu
-        document.addEventListener('contextmenu', e => e.preventDefault());
+        // Disable right-click only inside panorama
+        document.addEventListener("DOMContentLoaded", () => {
+            const pano = document.getElementById("panorama");
+            pano.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
 
-        // Get URL params
         const params = new URLSearchParams(window.location.search);
         const img = params.get("img") || "fallback.jpg";
         const lang = params.get("lang") || "en";
+
         let hotspots = [];
         try {
             hotspots = JSON.parse(params.get("hotspots")) || [];
@@ -70,7 +81,6 @@
             hotspots = [];
         }
 
-        // Cardinal points for the tour
         const cardinals = [
             { id: "front", yaw: 0 },
             { id: "right", yaw: 90 },
@@ -78,32 +88,8 @@
             { id: "left", yaw: 270 }
         ];
 
-        // Build pannellum viewer config
-        const viewer = pannellum.viewer('panorama', {
-            type: 'equirectangular',
-            panorama: img,
-            autoLoad: true,
-            showControls: true,
-            showFullscreenCtrl: true,
-            showZoomCtrl: true,
-            hotSpots: cardinals.map(point => {
-                const hs = hotspots.find(h => h.id === point.id);
-                const text = lang === "hi" && hs && hs[point.id + "_hi"] ? hs[point.id + "_hi"] : (hs ? hs[point.id] : "");
-                return {
-                    pitch: 0,
-                    yaw: point.yaw,
-                    type: "info",
-                    text: point.id.charAt(0).toUpperCase() + point.id.slice(1),
-                    id: point.id,
-                    clickHandlerFunc: () => playNarration(point.id),
-                };
-            })
-        });
-
-        // Narration box element
         const narrationBox = document.getElementById('narrationBox');
 
-        // Play narration based on side
         function playNarration(side) {
             const hs = hotspots.find(h => h.id === side);
             if (!hs) return;
@@ -124,7 +110,31 @@
             }
         }
 
-        // Get current yaw normalized 0-360
+        const viewer = pannellum.viewer('panorama', {
+            type: 'equirectangular',
+            panorama: img,
+            autoLoad: true,
+
+            // Disable all pannellum UI
+            showControls: false,
+            showFullscreenCtrl: false,
+            showZoomCtrl: false,
+            aboutMsg: "",
+
+            hotSpots: cardinals.map(point => {
+                const hs = hotspots.find(h => h.id === point.id);
+                const text = lang === "hi" && hs && hs[point.id + "_hi"] ? hs[point.id + "_hi"] : (hs ? hs[point.id] : "");
+                return {
+                    pitch: 0,
+                    yaw: point.yaw,
+                    type: "info",
+                    text: point.id.charAt(0).toUpperCase() + point.id.slice(1),
+                    id: point.id,
+                    clickHandlerFunc: () => playNarration(point.id),
+                };
+            })
+        });
+
         function getCurrentYaw() {
             let yaw = viewer.getYaw();
             yaw = yaw % 360;
@@ -132,16 +142,14 @@
             return yaw;
         }
 
-        // Find current cardinal index based on yaw angle
         function getCurrentCardinalIndex() {
             const yaw = getCurrentYaw();
-            if (yaw >= 315 || yaw < 45) return 0;       // Front
-            if (yaw >= 45 && yaw < 135) return 1;       // Right
-            if (yaw >= 135 && yaw < 225) return 2;      // Back
-            return 3;                                   // Left
+            if (yaw >= 315 || yaw < 45) return 0;
+            if (yaw >= 45 && yaw < 135) return 1;
+            if (yaw >= 135 && yaw < 225) return 2;
+            return 3;
         }
 
-        // Rotate viewer with smooth animation and narration
         function rotateViewer(direction) {
             const currentIndex = getCurrentCardinalIndex();
             let newIndex;
@@ -154,7 +162,6 @@
             setTimeout(() => playNarration(cardinals[newIndex].id), 1100);
         }
 
-        // Attach event listeners for navigation buttons
         document.getElementById('btn-left').addEventListener('click', () => rotateViewer('left'));
         document.getElementById('btn-right').addEventListener('click', () => rotateViewer('right'));
     </script>
