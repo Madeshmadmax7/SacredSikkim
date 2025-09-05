@@ -8,6 +8,8 @@ import './App.css';
 import Images from "./pages/Images";
 import About from "./pages/About";
 import Footer from "./components/Footer";
+import CulturalCalendar from "./pages/CulturalCalendar";
+import OverallMap from "./pages/OverallMap";
 
 
 function App() {
@@ -20,8 +22,9 @@ function App() {
         <Route path="/explore/:placeId" element={<ExploreDetail />} />
         <Route path="/images" element={<Images />} />
         <Route path="/about" element={<About />} />
+        <Route path="/calendar" element={<CulturalCalendar />} />
+        <Route path="/map" element={<OverallMap />} />
       </Routes>
-      {/* <Naration/> */}
       <Footer/>
     </BrowserRouter>
   );

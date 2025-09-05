@@ -4,11 +4,83 @@ import { Play, Pause, Volume2, ArrowLeft, ArrowRight } from "lucide-react";
 import places from "./placesData";
 import ImageCard from "./ImageCard";
 
+// Custom Dropdown Button component
+const DropdownButton = ({ options, selectedValue, onChange }) => {
+    const [isActive, setIsActive] = useState(false);
+    const buttonRef = useRef(null);
+
+    const toggleDropdown = () => setIsActive((prev) => !prev);
+
+    // Close dropdown if clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (buttonRef.current && !buttonRef.current.contains(event.target)) {
+                setIsActive(false);
+            }
+        };
+        window.addEventListener("click", handleClickOutside);
+        return () => window.removeEventListener("click", handleClickOutside);
+    }, []);
+
+    const selectedLabel = options.find((opt) => opt.value === selectedValue)?.label || "";
+
+    return (
+        <button
+            ref={buttonRef}
+            type="button"
+            role="button"
+            aria-haspopup="listbox"
+            aria-expanded={isActive}
+            onClick={toggleDropdown}
+            className={`dropdown flex flex-col relative w-34 rounded-md bg-amber-600 text-[hsl(220,12%,98%)] shadow-md transition-all duration-200 px-6 py-3`}
+        >
+            <span className="dropdown-label flex items-center gap-4 font-medium select-none text-base">
+                {selectedLabel}
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`w-5 h-5 transition-transform duration-200 ${isActive ? "rotate-180" : "rotate-0"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                </svg>
+            </span>
+
+
+            <ul
+                role="listbox"
+                className={`dropdown-menu absolute top-full left-0 mt-2 w-full rounded-md bg-amber-600 shadow-md origin-top scale-y-0 opacity-0 overflow-hidden transition-all duration-200 z-10 ${isActive ? "scale-y-100 opacity-100" : ""
+                    }`}
+            >
+                {options.map(({ value, label }) => (
+                    <li
+                        key={value}
+                        role="option"
+                        aria-selected={value === selectedValue}
+                        tabIndex={-1}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(value);
+                            setIsActive(false);
+                        }}
+                        className={`dropdown-item cursor-pointer px-6 py-3 font-medium text-base select-none hover:bg-amber-700 ${value === selectedValue ? "bg-amber-600 font-semibold" : ""
+                            }`}
+                    >
+                        {label}
+                    </li>
+                ))}
+            </ul>
+        </button>
+    );
+};
+
+// NarrationPlayer and ExploreDetail as before
 const NarrationPlayer = ({ text, language }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [utterance, setUtterance] = useState(null);
 
-    // Pick the best "human-like" voice if available
     const getBestVoice = (lang) => {
         const voices = speechSynthesis.getVoices();
         return (
@@ -170,6 +242,11 @@ export default function ExploreDetail() {
         setTimeout(() => playNarration(cardinals[idx].id), 1100);
     };
 
+    const languageOptions = [
+        { value: "en", label: "English" },
+        { value: "hi", label: "हिंदी" },
+    ];
+
     if (!data) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black">
@@ -180,7 +257,6 @@ export default function ExploreDetail() {
 
     return (
         <section className="min-h-screen bg-black flex flex-col text-white">
-            {/* Header Image */}
             <div className="relative w-full h-[70vh] mb-8">
                 <ImageCard
                     src={data.image}
@@ -188,13 +264,14 @@ export default function ExploreDetail() {
                     className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/60 flex flex-col justify-center px-8">
-                    <h1 className="text-3xl md:text-5xl font-bold mb-2 drop-shadow text-white">{data.title}</h1>
+                    <h1 className="text-3xl md:text-5xl font-bold mb-2 drop-shadow text-white">
+                        {data.title}
+                    </h1>
                     <p className="text-lg mb-4 drop-shadow text-gray-200">{data.subtitle}</p>
                     <p className="text-sm text-gray-400">📍 {data.location}</p>
                 </div>
             </div>
 
-            {/* Panorama Viewer */}
             <div className="h-152 w-262 mx-auto px-6 mb-12">
                 <h2 className="text-2xl font-bold mb-4 text-amber-400 text-center">Virtual Tour</h2>
                 <div className="w-full aspect-[16/9] rounded-xl overflow-hidden shadow-lg border border-gray-700 relative">
@@ -222,23 +299,22 @@ export default function ExploreDetail() {
                 </div>
             </div>
 
-            {/* Audio & Description */}
             <div className="max-w-3xl mx-auto px-8 py-6 space-y-10">
-                <div className="bg-black/40 rounded-xl p-6">
+                <div className="bg-black/40 rounded-xl">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-2xl font-bold text-amber-400 flex items-center space-x-2">
                             <Volume2 size={22} />
                             <span>Audio Narration</span>
                         </h2>
-                        <select
-                            className="bg-amber-600 text-white px-3 py-2 rounded-lg"
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                        >
-                            <option value="en">English</option>
-                            <option value="hi">हिंदी</option>
-                        </select>
+
+                        {/* Dropdown button */}
+                        <DropdownButton
+                            options={languageOptions}
+                            selectedValue={language}
+                            onChange={setLanguage}
+                        />
                     </div>
+
                     <NarrationPlayer
                         text={
                             language === "hi" && data.description_hi
@@ -257,25 +333,40 @@ export default function ExploreDetail() {
                 <div>
                     <h2 className="text-2xl font-bold mb-4 text-amber-400">Description</h2>
                     {data.description.map((desc, idx) => (
-                        <p key={idx} className="mb-3 text-gray-300 leading-relaxed">{desc}</p>
+                        <p key={idx} className="mb-3 text-gray-300 leading-relaxed">
+                            {desc}
+                        </p>
                     ))}
                 </div>
 
                 <div>
                     <h2 className="text-2xl font-bold mb-4 text-amber-400">History</h2>
                     {data.history.map((hist, idx) => (
-                        <p key={idx} className="mb-3 text-gray-300 leading-relaxed">{hist}</p>
+                        <p key={idx} className="mb-3 text-gray-300 leading-relaxed">
+                            {hist}
+                        </p>
                     ))}
                 </div>
 
                 <div>
                     <h2 className="text-2xl font-bold mb-4 text-amber-400">Hotspots</h2>
                     {data.hotspots?.map((spot, idx) => (
-                        <div key={idx} className="mb-6 p-4 bg-black/30 rounded-xl border border-gray-700">
-                            <p className="mb-2 text-gray-200"><strong>Front:</strong> {spot.front}</p>
-                            <p className="mb-2 text-gray-200"><strong>Right:</strong> {spot.right}</p>
-                            <p className="mb-2 text-gray-200"><strong>Back:</strong> {spot.back}</p>
-                            <p className="mb-2 text-gray-200"><strong>Left:</strong> {spot.left}</p>
+                        <div
+                            key={idx}
+                            className="mb-6 p-4 bg-black/30 rounded-xl border border-gray-700"
+                        >
+                            <p className="mb-2 text-gray-200">
+                                <strong>Front:</strong> {spot.front}
+                            </p>
+                            <p className="mb-2 text-gray-200">
+                                <strong>Right:</strong> {spot.right}
+                            </p>
+                            <p className="mb-2 text-gray-200">
+                                <strong>Back:</strong> {spot.back}
+                            </p>
+                            <p className="mb-2 text-gray-200">
+                                <strong>Left:</strong> {spot.left}
+                            </p>
                         </div>
                     ))}
                 </div>
