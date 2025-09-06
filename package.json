@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@amcharts/amcharts4": "^4.10.40",
+    "@amcharts/amcharts4-geodata": "^4.1.31",
     "@photo-sphere-viewer/core": "^5.14.0",
     "@photo-sphere-viewer/gyroscope-plugin": "^5.14.0",
     "@tailwindcss/vite": "^4.1.12",
