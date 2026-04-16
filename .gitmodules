@@ -1,0 +1,6 @@
+[submodule "sacredsikkimapi"]
+	path = sacredsikkimapi
+	url = https://github.com/Madeshmadmax7/sacredsikkimapi.git
+[submodule "sacredsikkim-ui"]
+	path = sacredsikkim-ui
+	url = https://github.com/Madeshmadmax7/sacredsikkim-ui.git
